@@ -9,12 +9,35 @@
         <script type="text/javascript">
             document.addEventListener("alpine:init", () => {
                 Alpine.data("state", () => ({
-                    "test": "Hello World!"
+                    "task": "entscheid-zsfg",
+                    "fields": {
+                        "entscheid-zsfg": {
+                            "display_name": "Entscheid zusammenfassen",
+                            "inputs": [
+                                {
+                                    "name": "fundstelle",
+                                    "display_name": "Fundstelle",
+                                    "type": "text"
+                                },
+                                {
+                                    "name": "rolle",
+                                    "display_name": "Was ist Ihre Rolle?",
+                                    "type": "text"
+                                }
+                            ]
+                        }
+                    },
+                    async getTaskSelectHTML() {
+                        return `<select>
+                                ${Object.keys(this.fields).map(t => "<option")}
+                            </select>`
+                    }
                 }))
             });
         </script>
         <div x-data="state" id="basediv">
-            <h1 class="text-red-400" x-text="test"></h1>
+            <h1 class="text-2xl">Legal Prompt Builder v0.1</h1>
+            <div x-html="getTaskSelectHTML"></div>
         </div>
     </body>
 </html> 
