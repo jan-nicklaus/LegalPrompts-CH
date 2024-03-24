@@ -13,6 +13,7 @@
                     "fields": {
                         "entscheid-zsfg": {
                             "display_name": "Entscheid zusammenfassen",
+                            "prompt_base": "Fasse den folgenden Entscheid zusammen!",
                             "inputs": [
                                 {
                                     "name": "fundstelle",
@@ -30,6 +31,7 @@
                         },
                         "task-zwei": {
                             "display_name": "Zweiter Task",
+                            "prompt_base": "Erzähle ein Gedicht auf der Basis folgender Informationen!",
                             "inputs": [
                                 {
                                     "name": "fundstelle",
@@ -48,6 +50,7 @@
                     },
                     "promptComplete": "",
                     async getTaskSelectHTML() {
+                        if(!this.task) return ""
                         console.log("test");
                         let options = Object.keys(this.fields).map(t => `<option value="${t}">${this.fields[t].display_name}</option>`).join("");
                         console.log(options);
@@ -56,25 +59,27 @@
                             </select>`
                     },
                     async getTaskFieldHTML() {
+                        if(!this.task) return ""
                         let html = "";
-                        let i=0;
-                        this.fields[this.task].inputs.forEach(field => {
-                            html += `<div class="flex flex-row items-center"><p>${field.display_name}: </p><input type="${field.type}" class="border border-black m-2 rounded " x-bind:value="fields['${this.task}'].inputs[${i}].value" @change="e => fields['${this.task}'].inputs[${i}].value = e.target.value"/></div>`
+                        this.fields[this.task].inputs.forEach(function (field, index) {
+                            console.log(field, index)
+                            html += `<div class="flex flex-row items-center"><p>${field.display_name}: </p><input type="${field.type}" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[${index}].value" @change="e => fields['entscheid-zsfg'].inputs[${index}].value = e.target.value"/></div>`
                         });
                         return html;
                     },
                     async generatePrompt() {
-                        this.promptComplete = "test";
+                        let fields = this.fields[this.task].inputs.map(i => `${i.display_name}: ${i.value}`).join("\n")
+                        this.promptComplete = `${this.fields[this.task].prompt_base}\n${fields}`;
                     }
                 }))
             });
         </script>
-        <div x-data="state" id="basediv">
+        <div x-data="state" id="basediv" class="flex flex-col">
             <h1 class="text-2xl">Legal Prompt Builder v0.1</h1>
             <div x-html="getTaskSelectHTML"></div>
             <div x-html="getTaskFieldHTML"></div>
             <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
-            <p x-text="promptComplete"></p>
+            <textarea x-text="promptComplete" class="w-full h-20"></textarea>
         </div>
     
  </body></html>
