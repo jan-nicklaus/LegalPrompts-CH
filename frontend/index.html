@@ -3,83 +3,99 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <title>Legal Prompt Builder</title>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-        <link href="style.css" rel="stylesheet">
+        <link href="static/style.css" rel="stylesheet">
     </head>
     <body>
         <script type="text/javascript">
             document.addEventListener("alpine:init", () => {
                 Alpine.data("state", () => ({
                     "task": "entscheid-zsfg",
+                    "model": "chatgpt",
+                    "models": {
+                        "chatgpt": {"display_name": "ChatGPT (GPT 3.5)"},
+                        "gemini": {"display_name": "Gemini"}
+                    },
+                    "store": {
+                        "entscheid-zsfg": {
+                            "fundstelle": "",
+                            "dec_text": "",
+                            "rolle": "",
+                            "gesetz": true,
+                            "zitation": true
+                        }
+                    },
                     "fields": {
                         "entscheid-zsfg": {
                             "display_name": "Entscheid zusammenfassen",
                             "prompt_base": "Fasse den folgenden Entscheid zusammen!",
-                            "inputs": [
-                                {
-                                    "name": "fundstelle",
-                                    "display_name": "Fundstelle",
-                                    "type": "text",
-                                    "value": ""
-                                },
-                                {
-                                    "name": "rolle",
-                                    "display_name": "Was ist Ihre Rolle?",
-                                    "type": "text",
-                                    "value": ""
-                                }
-                            ]
                         },
                         "task-zwei": {
                             "display_name": "Zweiter Task",
                             "prompt_base": "Erzähle ein Gedicht auf der Basis folgender Informationen!",
-                            "inputs": [
-                                {
-                                    "name": "fundstelle",
-                                    "display_name": "Was ist deine Lieblingsfarbe?",
-                                    "type": "text",
-                                    "value": ""
-                                },
-                                {
-                                    "name": "rolle",
-                                    "display_name": "Was ist dein Lieblingstier?",
-                                    "type": "text",
-                                    "value": ""
-                                }
-                            ]
                         }
                     },
                     "promptComplete": "",
                     async getTaskSelectHTML() {
-                        if(!this.task) return ""
-                        console.log("test");
                         let options = Object.keys(this.fields).map(t => `<option value="${t}">${this.fields[t].display_name}</option>`).join("");
-                        console.log(options);
-                        return `<select x-bind:value="task" @change="e => task = e.target.value">
+                        return `<select x-bind:value="task" @change="e => task = e.target.value" class="w-full">
                                 ${options}
                             </select>`
                     },
-                    async getTaskFieldHTML() {
-                        if(!this.task) return ""
-                        let html = "";
-                        this.fields[this.task].inputs.forEach(function (field, index) {
-                            console.log(field, index)
-                            html += `<div class="flex flex-row items-center"><p>${field.display_name}: </p><input type="${field.type}" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[${index}].value" @change="e => fields['entscheid-zsfg'].inputs[${index}].value = e.target.value"/></div>`
-                        });
-                        return html;
+                    async getModelSelectHTML() {
+                        let options = Object.keys(this.models).map(t => `<option value="${t}">${this.models[t].display_name}</option>`).join("");
+                        return `<select x-bind:value="model" @change="e => model = e.target.value" class="w-full">
+                                ${options}
+                            </select>`
+                    },
+                    async loadDecContents() {
+                        let text = ""
+                        await fetch("/GetDecText?" + new URLSearchParams({"fundstelle": this.store["entscheid-zsfg"]["fundstelle"]}), {"method": "GET"})
+                            .then(res => res.text()).then(t => this.store["entscheid-zsfg"]["dec_text"] = t);
+                        console.log(this.store["entscheid-zsfg"]["dec_text"]);
+                        return text;
                     },
                     async generatePrompt() {
-                        let fields = this.fields[this.task].inputs.map(i => `${i.display_name}: ${i.value}`).join("\n")
-                        this.promptComplete = `${this.fields[this.task].prompt_base}\n${fields}`;
+                        let prompt = this.fields[this.task].prompt_base + " ";
+
+                        if(this.task === "entscheid-zsfg") {
+                            if(this.store["entscheid-zsfg"]["gesetz"]) {
+                                prompt += "Gib die gesetzlichen Grundlagen an. "
+                            }
+                            if(this.store["entscheid-zsfg"]["zitation"]) {
+                                prompt += "Gib die zitierten Fundstellen anderer Entscheide an. "
+                            }
+                            prompt += "Der Adressat hat folgende Rolle: " + this.store["entscheid-zsfg"]["rolle"] + " "
+                            prompt += "Entscheid: " + (this.store["entscheid-zsfg"]["dec_text"] !== "" ? this.store["entscheid-zsfg"]["dec_text"] : this.store["entscheid-zsfg"]["fundstelle"]);
+                        }
+                        this.promptComplete = prompt;
                     }
                 }))
             });
         </script>
-        <div x-data="state" id="basediv" class="flex flex-col">
-            <h1 class="text-2xl">Legal Prompt Builder v0.1</h1>
-            <div x-html="getTaskSelectHTML"></div>
-            <div x-html="getTaskFieldHTML"></div>
+        <div x-data="state" id="basediv" class="flex flex-col w-screen h-screen">
+            <h1 class="text-2xl w-full text-center">Legal Prompt Builder v0.1</h1>
+            <div class="w-full flex">
+                <div class="h-full w-1/4 flex flex-col border-right border-black p-2">
+                    <h2 class="text-xl">Einstellungen</h2>
+                    <div x-html="getTaskSelectHTML" class="w-full"></div>
+                    <div x-html="getModelSelectHTML" class="w-full"></div>
+                </div>
+                <div class="h-full w-3/4 bg-white p-2">
+                    <div x-show="task === 'entscheid-zsfg'" class="overflow-y-auto">
+                        <h2 class="text-xl">Entscheid zusammenfassen</h2>
+                        <div class="flex items-center"><p class="w-20">Fundstelle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['fundstelle']" @change="e => store['entscheid-zsfg']['fundstelle'] = e.target.value;"/><button @click="() => store['entscheid-zsfg']['dec_text'] = loadDecContents()" class="rounded border border-black p-2 h-12">Entscheid laden</button></div>
+                        <div class="flex items-center"><p class="w-20">Ihre Rolle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['rolle']" @change="e => store['entscheid-zsfg']['rolle'] = e.target.value;"/></div>
+                        <div class="flex items-center"><p class="w-20">Gesetzliche Grundlagen angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['gesetz']" @change="e => store['entscheid-zsfg']['gesetz'] = e.target.checked;"/></div>
+                        <div class="flex items-center"><p class="w-20">Zitierte Entscheide angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['zitation']" @change="e => store['entscheid-zsfg']['zitation'] = e.target.checked;"/></div>
+                        
+                    </div>
+                </div>
+            </div>
+            
             <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
-            <textarea x-text="promptComplete" class="w-full h-20"></textarea>
+            <div class="flex-grow overflow-y-auto">
+                <p x-html="promptComplete.replaceAll('\n', '<br/>')" class="w-full flex-grow"></p>
+            </div>
         </div>
     
  </body></html>
