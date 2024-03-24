@@ -1,3 +1,7 @@
+import requests
+import json
+from bs4 import BeautifulSoup
+
 def query_entscheidsuche(query_term):
     url = "https://entscheidsuche.ch/_search.php"
 
