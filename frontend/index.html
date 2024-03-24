@@ -14,6 +14,7 @@
                     "dec_word_limit": 1500,
                     "dec_word_begin": 0,
                     "excerpt": "",
+                    "openaikey": "",
                     "models": {
                         "chatgpt": {"display_name": "ChatGPT (GPT 3.5)"},
                         "gemini": {"display_name": "Gemini"}
@@ -39,6 +40,7 @@
                         }
                     },
                     "promptComplete": "",
+                    "llmanswer": "",
                     async getTaskSelectHTML() {
                         let options = Object.keys(this.fields).map(t => `<option value="${t}">${this.fields[t].display_name}</option>`).join("");
                         return `<select x-bind:value="task" @change="e => task = e.target.value" class="w-full h-12 my-2">
@@ -89,6 +91,14 @@
                             prompt += "Entscheid: " + (this.excerpt !== "" ? (this.model === "chatgpt" ? this.excerpt : this.store["entscheid-zsfg"]["dec_url"]) : this.store["entscheid-zsfg"]["fundstelle"]);
                         }
                         this.promptComplete = prompt;
+                    },
+                    async askPrompt() {
+                        await this.generatePrompt();
+                        fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${this.openaikey}`}, "body": JSON.stringify({
+                            "model": "gpt-4-turbo-preview",
+                            "messages": [{"role": "user", "content": this.promptComplete}],
+                            "temperature": 0})})
+                            .then(res => res.json()).then(j => this.llmanswer = j.choices[0].message.content);
                     }
                 }))
             });
@@ -117,8 +127,9 @@
             </div>
             
             <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
+            <button class="border rounded border-black p-2" @click="askPrompt">Direkt anfragen</button>
             <div class="flex-grow overflow-y-auto">
-                <p x-html="promptComplete.replaceAll('\n', '<br/>')" class="w-full flex-grow"></p>
+                <p x-html="llmanswer.replaceAll('\n', '<br/>')" class="w-full flex-grow"></p>
             </div>
         </div>
     
