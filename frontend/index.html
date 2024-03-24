@@ -71,12 +71,10 @@
         </script>
         <div x-data="state" id="basediv">
             <h1 class="text-2xl">Legal Prompt Builder v0.1</h1>
-            <div x-html="getTaskSelectHTML"><select x-bind:value="task" @change="e =&gt; task = e.target.value">
-                                <option value="entscheid-zsfg" selected="selected">Entscheid zusammenfassen</option><option value="task-zwei">Zweiter Task</option>
-                            </select></div>
-            <div x-html="getTaskFieldHTML"><div class="flex flex-row items-center"><p>Fundstelle: </p><input type="text" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[0].value" @change="e =&gt; fields['entscheid-zsfg'].inputs[0].value = e.target.value"></div><div class="flex flex-row items-center"><p>Was ist Ihre Rolle?: </p><input type="text" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[0].value" @change="e =&gt; fields['entscheid-zsfg'].inputs[0].value = e.target.value"></div></div>
+            <div x-html="getTaskSelectHTML"></div>
+            <div x-html="getTaskFieldHTML"></div>
             <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
-            <p x-text="promptComplete">test</p>
+            <p x-text="promptComplete"></p>
         </div>
     
  </body></html>
