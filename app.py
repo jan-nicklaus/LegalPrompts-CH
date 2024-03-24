@@ -22,7 +22,7 @@ def GetDecText():
     query_term = request.args.get("fundstelle")
     url = query_entscheidsuche(query_term)
     text = fetch_and_parse_html(url)
-    json_string = '{"text": "' + text + '", "link": "' + url + '"}'
+    json_string = json.dumps({"text": text, "link": url})
     return json_string
 
 if __name__ == "__main__":

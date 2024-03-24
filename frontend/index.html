@@ -11,6 +11,9 @@
                 Alpine.data("state", () => ({
                     "task": "entscheid-zsfg",
                     "model": "chatgpt",
+                    "dec_word_limit": 1500,
+                    "dec_word_begin": 0,
+                    "excerpt": "",
                     "models": {
                         "chatgpt": {"display_name": "ChatGPT (GPT 3.5)"},
                         "gemini": {"display_name": "Gemini"}
@@ -19,6 +22,7 @@
                         "entscheid-zsfg": {
                             "fundstelle": "",
                             "dec_text": "",
+                            "dec_url": "",
                             "rolle": "",
                             "gesetz": true,
                             "zitation": true
@@ -37,22 +41,36 @@
                     "promptComplete": "",
                     async getTaskSelectHTML() {
                         let options = Object.keys(this.fields).map(t => `<option value="${t}">${this.fields[t].display_name}</option>`).join("");
-                        return `<select x-bind:value="task" @change="e => task = e.target.value" class="w-full">
+                        return `<select x-bind:value="task" @change="e => task = e.target.value" class="w-full h-12 my-2">
                                 ${options}
                             </select>`
                     },
                     async getModelSelectHTML() {
                         let options = Object.keys(this.models).map(t => `<option value="${t}">${this.models[t].display_name}</option>`).join("");
-                        return `<select x-bind:value="model" @change="e => model = e.target.value" class="w-full">
+                        return `<select x-bind:value="model" @change="e => model = e.target.value" class="w-full h-12 my-2">
                                 ${options}
                             </select>`
                     },
+                    async getDecSliderHTML() {
+                        let parts = this.store["entscheid-zsfg"]["dec_text"].split(" ")
+                        this.excerpt = parts.slice(this.dec_word_begin, this.dec_word_begin + this.dec_word_limit).join(" ");
+                        return `<p>${this.excerpt.substring(0,50)} ... ${this.excerpt.substring(this.excerpt.length - 50)}</p>
+                        <input type="range" min="0" max="${parts.length - this.dec_word_limit}" x-bind:value="dec_word_begin" @change="e => updateDecExcerpt(e)" class="slider w-full">`
+                    },
+                    async updateDecExcerpt(e) {
+                        this.dec_word_begin = parseInt(e.target.value);
+                        let parts = this.store["entscheid-zsfg"]["dec_text"].split(" ")
+                        this.excerpt = parts.slice(this.dec_word_begin, this.dec_word_begin + this.dec_word_limit).join(" ");
+                        console.log(this.dec_word_begin, this.dec_word_limit, this.excerpt.split(" ").length, this.dec_word_begin, this.dec_word_begin + this.dec_word_limit);
+                    },
                     async loadDecContents() {
-                        let text = ""
                         await fetch("/GetDecText?" + new URLSearchParams({"fundstelle": this.store["entscheid-zsfg"]["fundstelle"]}), {"method": "GET"})
-                            .then(res => res.text()).then(t => this.store["entscheid-zsfg"]["dec_text"] = t);
+                            .then(res => res.json()).then(j => {
+                                this.store["entscheid-zsfg"]["dec_text"] = j.text
+                                this.store["entscheid-zsfg"]["dec_url"] = j.link
+                            })    
+                        //.then(res => res.text()).then(t => this.store["entscheid-zsfg"]["dec_text"] = t);
                         console.log(this.store["entscheid-zsfg"]["dec_text"]);
-                        return text;
                     },
                     async generatePrompt() {
                         let prompt = this.fields[this.task].prompt_base + " ";
@@ -64,8 +82,11 @@
                             if(this.store["entscheid-zsfg"]["zitation"]) {
                                 prompt += "Gib die zitierten Fundstellen anderer Entscheide an. "
                             }
-                            prompt += "Der Adressat hat folgende Rolle: " + this.store["entscheid-zsfg"]["rolle"] + " "
-                            prompt += "Entscheid: " + (this.store["entscheid-zsfg"]["dec_text"] !== "" ? this.store["entscheid-zsfg"]["dec_text"] : this.store["entscheid-zsfg"]["fundstelle"]);
+                            if(this.store["entscheid-zsfg"]["zitation"] !== "") {
+                                prompt += "Der Adressat hat folgende Rolle: " + this.store["entscheid-zsfg"]["rolle"] + " "
+                            }
+                            
+                            prompt += "Entscheid: " + (this.excerpt !== "" ? (this.model === "chatgpt" ? this.excerpt : this.store["entscheid-zsfg"]["dec_url"]) : this.store["entscheid-zsfg"]["fundstelle"]);
                         }
                         this.promptComplete = prompt;
                     }
@@ -83,7 +104,10 @@
                 <div class="h-full w-3/4 bg-white p-2">
                     <div x-show="task === 'entscheid-zsfg'" class="overflow-y-auto">
                         <h2 class="text-xl">Entscheid zusammenfassen</h2>
-                        <div class="flex items-center"><p class="w-20">Fundstelle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['fundstelle']" @change="e => store['entscheid-zsfg']['fundstelle'] = e.target.value;"/><button @click="() => store['entscheid-zsfg']['dec_text'] = loadDecContents()" class="rounded border border-black p-2 h-12">Entscheid laden</button></div>
+                        <div class="flex items-center"><p class="w-20">Fundstelle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['fundstelle']" @change="e => store['entscheid-zsfg']['fundstelle'] = e.target.value;"/><button @click="loadDecContents" class="rounded border border-black p-2 h-12">Entscheid laden</button></div>
+                        <div x-show='store["entscheid-zsfg"]["dec_text"].length > 0' x-html="getDecSliderHTML">
+                            
+                        </div>
                         <div class="flex items-center"><p class="w-20">Ihre Rolle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['rolle']" @change="e => store['entscheid-zsfg']['rolle'] = e.target.value;"/></div>
                         <div class="flex items-center"><p class="w-20">Gesetzliche Grundlagen angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['gesetz']" @change="e => store['entscheid-zsfg']['gesetz'] = e.target.checked;"/></div>
                         <div class="flex items-center"><p class="w-20">Zitierte Entscheide angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['zitation']" @change="e => store['entscheid-zsfg']['zitation'] = e.target.checked;"/></div>
