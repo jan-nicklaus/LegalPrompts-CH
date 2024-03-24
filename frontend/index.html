@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
-    <head>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <title>Legal Prompt Builder</title>
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-        <link href="style.css" rel="stylesheet">
+        <script defer="defer" src="Legal%20Prompt%20Builder-Dateien/cdn.min.js"></script>
+        <link href="Legal%20Prompt%20Builder-Dateien/style.css" rel="stylesheet">
     </head>
     <body>
         <script type="text/javascript">
@@ -17,27 +17,66 @@
                                 {
                                     "name": "fundstelle",
                                     "display_name": "Fundstelle",
-                                    "type": "text"
+                                    "type": "text",
+                                    "value": ""
                                 },
                                 {
                                     "name": "rolle",
                                     "display_name": "Was ist Ihre Rolle?",
-                                    "type": "text"
+                                    "type": "text",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "task-zwei": {
+                            "display_name": "Zweiter Task",
+                            "inputs": [
+                                {
+                                    "name": "fundstelle",
+                                    "display_name": "Was ist deine Lieblingsfarbe?",
+                                    "type": "text",
+                                    "value": ""
+                                },
+                                {
+                                    "name": "rolle",
+                                    "display_name": "Was ist dein Lieblingstier?",
+                                    "type": "text",
+                                    "value": ""
                                 }
                             ]
                         }
                     },
+                    "promptComplete": "",
                     async getTaskSelectHTML() {
-                        return `<select>
-                                ${Object.keys(this.fields).map(t => "<option")}
+                        console.log("test");
+                        let options = Object.keys(this.fields).map(t => `<option value="${t}">${this.fields[t].display_name}</option>`).join("");
+                        console.log(options);
+                        return `<select x-bind:value="task" @change="e => task = e.target.value">
+                                ${options}
                             </select>`
+                    },
+                    async getTaskFieldHTML() {
+                        let html = "";
+                        let i=0;
+                        this.fields[this.task].inputs.forEach(field => {
+                            html += `<div class="flex flex-row items-center"><p>${field.display_name}: </p><input type="${field.type}" class="border border-black m-2 rounded " x-bind:value="fields['${this.task}'].inputs[${i}].value" @change="e => fields['${this.task}'].inputs[${i}].value = e.target.value"/></div>`
+                        });
+                        return html;
+                    },
+                    async generatePrompt() {
+                        this.promptComplete = "test";
                     }
                 }))
             });
         </script>
         <div x-data="state" id="basediv">
             <h1 class="text-2xl">Legal Prompt Builder v0.1</h1>
-            <div x-html="getTaskSelectHTML"></div>
+            <div x-html="getTaskSelectHTML"><select x-bind:value="task" @change="e =&gt; task = e.target.value">
+                                <option value="entscheid-zsfg" selected="selected">Entscheid zusammenfassen</option><option value="task-zwei">Zweiter Task</option>
+                            </select></div>
+            <div x-html="getTaskFieldHTML"><div class="flex flex-row items-center"><p>Fundstelle: </p><input type="text" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[0].value" @change="e =&gt; fields['entscheid-zsfg'].inputs[0].value = e.target.value"></div><div class="flex flex-row items-center"><p>Was ist Ihre Rolle?: </p><input type="text" class="border border-black m-2 rounded " x-bind:value="fields['entscheid-zsfg'].inputs[0].value" @change="e =&gt; fields['entscheid-zsfg'].inputs[0].value = e.target.value"></div></div>
+            <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
+            <p x-text="promptComplete">test</p>
         </div>
-    </body>
-</html> 
+    
+ </body></html>
