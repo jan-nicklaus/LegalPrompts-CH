@@ -48,7 +48,7 @@
                     "fields": {
                         "entscheid-zsfg": {
                             "display_name": "Entscheid zusammenfassen",
-                            "prompt_base": "Du bist eine juristische Expertin, die präzise und auf den Punkt Zusammenfassungen liefert.",
+                            "prompt_base": "Du bist eine juristische Expertin, der präzise und auf den Punkt Zusammenfassungen liefert.",
                         },
                         "task-zwei": {
                             "display_name": "Zweiter Task",
@@ -153,32 +153,67 @@
                         }      
                     },
                     async askPrompt() {
-                        
-                        dec_modal.showModal()
+                        dec_modal.showModal();
                         const prompt = await this.generatePrompt();
-                        console.log({"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${document.getElementById("keyfield").value}`}, "body": JSON.stringify({
+
+                        // Prepare the headers and body for the fetch request
+                        const headers = new Headers({
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${document.getElementById("keyfield").value}`
+                        });
+
+                        const body = JSON.stringify({
                             "model": this.models[this.model].model_name,
                             "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0, "stream": true})})
-                        let decoder = new TextDecoder()
-                        for await (const chunk of (await fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${document.getElementById("keyfield").value}`}, "body": JSON.stringify({
-                            "model": this.models[this.model].model_name,
-                            "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0, "stream": true})})).body) {
-                                let decoded = decoder.decode(chunk)
+                            "temperature": 0,
+                            "stream": true
+                        });
+
+                        try {
+                            // Make the fetch request to the OpenAI API
+                            const response = await fetch("https://api.openai.com/v1/chat/completions", { method: "POST", headers, body });
+
+                            // Check if the response body is readable
+                            if (!response.body || !response.body.getReader) {
+                                throw new Error('Streaming is not supported in this browser.');
+                            }
+
+                            // Initialize a reader from the response stream
+                            const reader = response.body.getReader();
+                            const decoder = new TextDecoder();
+                            this.llmanswer = ''; // Ensure llmanswer is initialized
+
+                            while (true) {
+                                // Read each chunk from the stream
+                                const { done, value } = await reader.read();
+                                if (done) {
+                                    break;
+                                }
+                                const decoded = decoder.decode(value, { stream: true });
                                 console.log(decoded);
-                                decoded.split("data:").forEach(d => {
-                                    let token = d.match(/"content":"(.*)"}/)
-                                    console.log(token)
-                                    if(token && token.length > 1) {
-                                        this.llmanswer += token[1]
+
+                                // Process each chunk to extract data
+                                decoded.split("\n").forEach(d => {
+                                    const match = /"content":"([^"]*)"/.exec(d);
+                                    if (match && match[1]) {
+                                        this.llmanswer += match[1];
                                     }
-                                })
-                                
+                                });
                             }
-                            if(this.llmanswer === "") {
-                                this.llmanswer = "Fehler bei der Weitergabe der Anfrage! Haben Sie einen gültigen API Key eingegeben?" 
+                        } catch (error) {
+                            console.error('Error while fetching or reading the data:', error);
+                            this.llmanswer = "Fehler beim Verarbeiten der Anfrage.";
+                        } finally {
+                            // Always release the lock on the reader
+                            if (reader) {
+                                reader.releaseLock();
                             }
+                        }
+
+                        // Handle the case where no answer was received
+                        if (!this.llmanswer) {
+                            this.llmanswer = "Fehler bei der Weitergabe der Anfrage! Haben Sie einen gültigen API Key eingegeben?";
+                        }
                     },
                     async copyPrompt() {
                         navigator.clipboard.writeText(document.getElementById("promptDisplay").innerText);
