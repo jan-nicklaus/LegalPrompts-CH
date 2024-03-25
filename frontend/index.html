@@ -3,10 +3,6 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <title>Legal Prompt Builder</title>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-                
-<script type="module" src="https://md-block.verou.me/md-block.js"></script>
-
-    
         <link href="static/style.css" rel="stylesheet">
     </head>
     <body>
@@ -232,6 +228,7 @@
                     <p class="font-bold">Aktueller Prompt</p>
                     <textarea x-html="generatePrompt()" id="promptDisplay" class="w-full flex-grow"></textarea>
                     <button class="border rounded border-black p-2 border-indigo-800  bg-indigo-800 text-white" @click="copyPrompt" x-show="mode === 'noapi'" x-text="copy_text"></button>
+                    <input type="password" x-bind:value="openaikey" @change="e => openaikey = e.target.value" class="p-2 my-2 border rounded border-black h-12" x-show="mode === 'api'" placeholder="OpenAI API Key"/>
                     <button class="border rounded border-black p-2 border-indigo-800 bg-indigo-800 text-white" @click="askPrompt" x-show="mode === 'api'">Direkt anfragen</button>
                 </div>
             </div>
