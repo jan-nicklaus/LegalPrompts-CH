@@ -3,6 +3,7 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <title>Legal Prompt Builder</title>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://unpkg.com/showdown/dist/showdown.min.js"></script>
         <link href="static/style.css" rel="stylesheet">
     </head>
     <body>
@@ -16,6 +17,7 @@
                     "dec_word_begin": 0,
                     "dec_load_text": "",
                     "excerpt": "",
+                    "markdownConverter": new showdown.Converter(),
                     "copy_text": "Prompt kopieren",
                     "openaikey": "",
                     "models": {
@@ -278,7 +280,7 @@
             
             <dialog id="dec_modal" class="modal">
                 <div class="modal-box">
-                    <md-block x-html="llmanswer.replaceAll('\\n', '<br/>')" class="w-full flex-grow"></md-block>
+                    <md-block x-html="markdownConverter.makeHtml(llmanswer).replaceAll('\\n', '<br/>')" class="w-full flex-grow"></md-block>
                   <div class="modal-action">
                     <button class="btn" @click="copyLLMAnswer" id="copyanswerbtn">Antwort kopieren</button>
                     <form method="dialog">
