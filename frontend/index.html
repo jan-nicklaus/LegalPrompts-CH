@@ -153,14 +153,16 @@
                         }      
                     },
                     async askPrompt() {
+                        console.log(document.getElementById("keyfield").value)
                         dec_modal.showModal()
                         const prompt = await this.generatePrompt();
                         let decoder = new TextDecoder()
-                        for await (const chunk of (await fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${this.openaikey}`}, "body": JSON.stringify({
-                            "model": "gpt-4-turbo-preview",
+                        for await (const chunk of (await fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${document.getElementById("keyfield").value}`}, "body": JSON.stringify({
+                            "model": this.models[this.model].model_name,
                             "messages": [{"role": "user", "content": prompt}],
                             "temperature": 0, "stream": true})})).body) {
                                 let decoded = decoder.decode(chunk)
+                                console.log(decoded);
                                 decoded.split("data:").forEach(d => {
                                     let token = d.match(/"content":"(.*)"}/)
                                     console.log(token)
@@ -170,15 +172,16 @@
                                 })
                                 
                             }
-
-                            //.then(res => res.json()).then(j => console.log(j))// this.llmanswer = j.choices[0].message.content);
+                            if(this.llmanswer === "") {
+                                this.llmanswer = "Fehler bei der Weitergabe der Anfrage! Haben Sie einen gültigen API Key eingegeben?" 
+                            }
                     },
                     async copyPrompt() {
                         navigator.clipboard.writeText(document.getElementById("promptDisplay").innerText);
                         this.copy_text = "Prompt kopiert!"
                     },
                     async copyLLMAnswer() {
-                        navigator.clipboard.writeText(this.llmanswer);
+                        navigator.clipboard.writeText(this.llmanswer.replaceAll("\\n", "\n"));
                         document.getElementById("copyanswerbtn").innerHTML = "Antwort kopiert!";
                     }
                 }))
@@ -228,8 +231,8 @@
                     <p class="font-bold">Aktueller Prompt</p>
                     <textarea x-html="generatePrompt()" id="promptDisplay" class="w-full flex-grow"></textarea>
                     <button class="border rounded border-black p-2 border-indigo-800  bg-indigo-800 text-white" @click="copyPrompt" x-show="mode === 'noapi'" x-text="copy_text"></button>
-                    <input type="password" x-bind:value="openaikey" @change="e => openaikey = e.target.value" class="p-2 my-2 border rounded border-black h-12" x-show="mode === 'api'" placeholder="OpenAI API Key"/>
-                    <button class="border rounded border-black p-2 border-indigo-800 bg-indigo-800 text-white" @click="askPrompt" x-show="mode === 'api'">Direkt anfragen</button>
+                    <input type="password" id="keyfield" class="p-2 my-2 border rounded border-black h-12" x-show="mode === 'api'" placeholder="OpenAI API Key"/>
+                    <button class="border rounded border-black p-2 border-indigo-800 bg-indigo-800 text-white" @click="askPrompt" x-show="mode === 'api'" >Direkt anfragen</button>
                 </div>
             </div>
             
