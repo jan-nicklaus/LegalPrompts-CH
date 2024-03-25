@@ -14,29 +14,27 @@ Um die Modelle gewinnbringend einsetzen zu können, ist es zentral, eine gut for
 + etc. etc.
 
 
-# How to run
-
 ## Vorraussetzungen
 
-# installiere die requirements um das Projekt zu starten
+installiere die requirements um das Projekt zu starten
 $ pip install -r requirements.txt
 
-# starte den web server
+starte den web server
 $ python -m flask run
 
-# Der Server läuft auf dem Port 5001 http://localhost:5001/
+Der Server läuft auf dem Port 5001 http://localhost:5001/
 
 
 ## Anleitung für unsere Anwendung
-+       Auswahl des Sprachmodells (oder ohne nutzen)
-+       Bei Benutzung mit Sprachmodell im  Feld "OpenAI Key" den Key eingeben
-+       Fundstelle im Freitextfeld angeben (Entscheidnummer)
-+       Stil auswählen (juristisch/nicht juristisch)
-+       Ggf. Länge des Entscheids regulieren
-+       Auswahl, ob die Entscheidzusammenfassung in Bulletpoints oder in einem Fliesstext erscheinen soll
-+       Bedürfnisse für die Entscheidzusammenfassung in der Checkbox auswählen
-+       Entscheid laden
-+       Die Entscheidzusammenfassung erscheint (falls mit API Key in einem Pop-Up Fenster)
++ Auswahl des Sprachmodells (oder ohne nutzen)
++ Bei Benutzung mit Sprachmodell im  Feld "OpenAI Key" den Key eingeben
++ Fundstelle im Freitextfeld angeben (Entscheidnummer)
++ Stil auswählen (juristisch/nicht juristisch)
++ Ggf. Länge des Entscheids regulieren
++ Auswahl, ob die Entscheidzusammenfassung in Bulletpoints oder in einem Fliesstext erscheinen soll
++ Bedürfnisse für die Entscheidzusammenfassung in der Checkbox auswählen
++ Entscheid laden
++ Die Entscheidzusammenfassung erscheint (falls mit API Key in einem Pop-Up Fenster)
 
 ## Umsetzung
 Die Umsetzung erfolgte im Rahmen des Open Legal Lab 2024 (https://opendata.ch/de/events/open-legal-lab-2024/).
