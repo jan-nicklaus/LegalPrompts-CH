@@ -3,6 +3,10 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         <title>Legal Prompt Builder</title>
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+                
+<script type="module" src="https://md-block.verou.me/md-block.js"></script>
+
+    
         <link href="static/style.css" rel="stylesheet">
     </head>
     <body>
@@ -10,14 +14,20 @@
             document.addEventListener("alpine:init", () => {
                 Alpine.data("state", () => ({
                     "task": "entscheid-zsfg",
-                    "model": "chatgpt",
-                    "dec_word_limit": 1500,
+                    "mode": "api",
+                    "model": "gpt-4-api",
+                    "dec_word_limit": 2000,
                     "dec_word_begin": 0,
+                    "dec_load_text": "",
                     "excerpt": "",
-                    "openaikey": "",
+                    "copy_text": "Prompt kopieren",
+                    "openaikey": "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",
                     "models": {
-                        "chatgpt": {"display_name": "ChatGPT (GPT 3.5)"},
-                        "gemini": {"display_name": "Gemini"}
+                        "gpt-4-api": {"display_name": "GPT 4", "mode": "api", "model_name": "gpt-4-turbo-preview"},
+                        "chatgpt": {"display_name": "ChatGPT (GPT 3.5)", "mode": "noapi"},
+                        "chatgpt-api": {"display_name": "ChatGPT (GPT 3.5)", "mode": "api", "model_name": "gpt-3.5-turbo"},
+                        "gpt-4": {"display_name": "GPT 4", "mode": "noapi"},
+                        "gemini": {"display_name": "Gemini", "mode": "noapi"}
                     },
                     "store": {
                         "entscheid-zsfg": {
@@ -26,13 +36,23 @@
                             "dec_url": "",
                             "rolle": "",
                             "gesetz": true,
-                            "zitation": true
+                            "zitation": true,
+                            "sv": true,
+                            "quintessenz": true,
+                            "erwaegungen": true,
+                            "dispositiv": true,
+                            "arg-bf": true,
+                            "arg-bg": true,
+                            "restriction": true,
+                            "grundlage": true,
+                            "keywords": true,
+
                         }
                     },
                     "fields": {
                         "entscheid-zsfg": {
                             "display_name": "Entscheid zusammenfassen",
-                            "prompt_base": "Fasse den folgenden Entscheid zusammen!",
+                            "prompt_base": "Du bist ein juristischer Experte, der präzise und auf den Punkt Zusammenfassungen liefert.",
                         },
                         "task-zwei": {
                             "display_name": "Zweiter Task",
@@ -48,7 +68,7 @@
                             </select>`
                     },
                     async getModelSelectHTML() {
-                        let options = Object.keys(this.models).map(t => `<option value="${t}">${this.models[t].display_name}</option>`).join("");
+                        let options = Object.keys(this.models).filter(k => this.mode === this.models[k].mode).map(t => `<option value="${t}">${this.models[t].display_name}</option>`).join("");
                         return `<select x-bind:value="model" @change="e => model = e.target.value" class="w-full h-12 my-2">
                                 ${options}
                             </select>`
@@ -72,33 +92,98 @@
                                 this.store["entscheid-zsfg"]["dec_url"] = j.link
                             })    
                         //.then(res => res.text()).then(t => this.store["entscheid-zsfg"]["dec_text"] = t);
-                        console.log(this.store["entscheid-zsfg"]["dec_text"]);
+                        this.dec_load_text = "Entscheid geladen: " + this.store["entscheid-zsfg"]["fundstelle"]
                     },
                     async generatePrompt() {
                         let prompt = this.fields[this.task].prompt_base + " ";
 
                         if(this.task === "entscheid-zsfg") {
-                            if(this.store["entscheid-zsfg"]["gesetz"]) {
-                                prompt += "Gib die gesetzlichen Grundlagen an. "
+                            prompt += `Fasse den Gerichtsentscheid im ${document.getElementById("jurstyleselect").value} in ${document.getElementById("styleselect").value} zusammen. Formuliere dafür nachfolgende Abschnitte: `
+                            let parts = []
+                            if(this.store["entscheid-zsfg"]["sv"]) {
+                                parts.push("Sachverhalt")
+                            }
+                            if(this.store["entscheid-zsfg"]["quintessenz"]) {
+                                parts.push("Quintessenz")
+                            }
+                            if(this.store["entscheid-zsfg"]["erwaegungen"]) {
+                                parts.push("Erwägungen des Gerichts")
+                            }
+                            if(this.store["entscheid-zsfg"]["dispositiv"]) {
+                                parts.push("Dispositiv")
+                            }
+                            if(this.store["entscheid-zsfg"]["arg-bf"]) {
+                                parts.push("Argumente Beschwerdeführer:in")
+                            }
+                            if(this.store["entscheid-zsfg"]["arg-bg"]) {
+                                parts.push("Argumente Beschwerdegegner:in")
+                            }
+                            prompt += parts.join(", ") + ". "
+                            if(this.store["entscheid-zsfg"]["restriction"]) {
+                                prompt += "Halte dich nur an die Informationen aus dem Text. "
                             }
                             if(this.store["entscheid-zsfg"]["zitation"]) {
-                                prompt += "Gib die zitierten Fundstellen anderer Entscheide an. "
+                                prompt += "Liste alle zitierten Entscheide mit Bulletpoints auf. "
                             }
-                            if(this.store["entscheid-zsfg"]["zitation"] !== "") {
-                                prompt += "Der Adressat hat folgende Rolle: " + this.store["entscheid-zsfg"]["rolle"] + " "
+                            if(this.store["entscheid-zsfg"]["grundlage"]) {
+                                prompt += "Liste alle zitierten Entscheide mit Bulletpoints auf. "
+                            }
+                            if(this.store["entscheid-zsfg"]["keywords"]) {
+                                prompt += "Liste alle Schlüsselwörter aus dem Entscheid mit Bulletpoints auf. "
                             }
                             
-                            prompt += "Entscheid: " + (this.excerpt !== "" ? (this.model === "chatgpt" ? this.excerpt : this.store["entscheid-zsfg"]["dec_url"]) : this.store["entscheid-zsfg"]["fundstelle"]);
+                            prompt += "\n\nEntscheid: " 
+                            if(this.model === "gemini") {
+                                prompt += this.store["entscheid-zsfg"]["dec_url"]
+                            }
+                            else if(["chatgpt", "chatgpt-api"].includes(this.model)) {
+                                prompt += this.excerpt !== "" ? this.excerpt : this.store["entscheid-zsfg"]["fundstelle"]
+                            }
+                            else {
+                                prompt += this.store["entscheid-zsfg"]["dec_text"]
+                            }
                         }
-                        this.promptComplete = prompt;
+                        this.copy_text = "Prompt kopieren"
+                        return prompt;
+                    },
+                    async decodeChunk(chunk) {
+                        try {
+                            let decoded = decoder.decode(chunk)
+                            let token = decoded.match(/"content":"(.*)"}/)[1]
+                            console.log(token)
+                            return token;
+                        } catch (error) {
+                            return "";
+                        }      
                     },
                     async askPrompt() {
-                        await this.generatePrompt();
-                        fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${this.openaikey}`}, "body": JSON.stringify({
+                        dec_modal.showModal()
+                        const prompt = await this.generatePrompt();
+                        let decoder = new TextDecoder()
+                        for await (const chunk of (await fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${this.openaikey}`}, "body": JSON.stringify({
                             "model": "gpt-4-turbo-preview",
-                            "messages": [{"role": "user", "content": this.promptComplete}],
-                            "temperature": 0})})
-                            .then(res => res.json()).then(j => this.llmanswer = j.choices[0].message.content);
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0, "stream": true})})).body) {
+                                let decoded = decoder.decode(chunk)
+                                decoded.split("data:").forEach(d => {
+                                    let token = d.match(/"content":"(.*)"}/)
+                                    console.log(token)
+                                    if(token && token.length > 1) {
+                                        this.llmanswer += token[1]
+                                    }
+                                })
+                                
+                            }
+
+                            //.then(res => res.json()).then(j => console.log(j))// this.llmanswer = j.choices[0].message.content);
+                    },
+                    async copyPrompt() {
+                        navigator.clipboard.writeText(document.getElementById("promptDisplay").innerText);
+                        this.copy_text = "Prompt kopiert!"
+                    },
+                    async copyLLMAnswer() {
+                        navigator.clipboard.writeText(this.llmanswer);
+                        document.getElementById("copyanswerbtn").innerHTML = "Antwort kopiert!";
                     }
                 }))
             });
@@ -108,29 +193,63 @@
             <div class="w-full flex">
                 <div class="h-full w-1/4 flex flex-col border-right border-black p-2">
                     <h2 class="text-xl">Einstellungen</h2>
+                    <select x-bind:value="mode" @change="e => mode = e.target.value" class="w-full h-12 my-2">
+                        <option value="api" selected>Prompt Builder mit API Call</option>
+                        <option value="noapi">Prompt Builder ohne API Call</option>
+                    </select>
                     <div x-html="getTaskSelectHTML" class="w-full"></div>
                     <div x-html="getModelSelectHTML" class="w-full"></div>
                 </div>
-                <div class="h-full w-3/4 bg-white p-2">
+                <div class="h-full w-1/2 bg-white p-2">
                     <div x-show="task === 'entscheid-zsfg'" class="overflow-y-auto">
                         <h2 class="text-xl">Entscheid zusammenfassen</h2>
-                        <div class="flex items-center"><p class="w-20">Fundstelle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['fundstelle']" @change="e => store['entscheid-zsfg']['fundstelle'] = e.target.value;"/><button @click="loadDecContents" class="rounded border border-black p-2 h-12">Entscheid laden</button></div>
-                        <div x-show='store["entscheid-zsfg"]["dec_text"].length > 0' x-html="getDecSliderHTML">
-                            
+                        <div class="flex items-center"><p class="w-20">Fundstelle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['fundstelle']" @change="e => store['entscheid-zsfg']['fundstelle'] = e.target.value;"/><button @click="loadDecContents" class="rounded border border-black p-2 h-12">Entscheid laden</button><p x-text="dec_load_text" class="ml-2"></p></div>
+                        <div x-show='store["entscheid-zsfg"]["dec_text"].length > 0 && ["chatgpt", "chatgpt-api"].includes(model)' x-html="getDecSliderHTML">
                         </div>
-                        <div class="flex items-center"><p class="w-20">Ihre Rolle: </p><input class="p-2 m-2 border rounded border-black h-12" x-bind:value="store['entscheid-zsfg']['rolle']" @change="e => store['entscheid-zsfg']['rolle'] = e.target.value;"/></div>
-                        <div class="flex items-center"><p class="w-20">Gesetzliche Grundlagen angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['gesetz']" @change="e => store['entscheid-zsfg']['gesetz'] = e.target.checked;"/></div>
-                        <div class="flex items-center"><p class="w-20">Zitierte Entscheide angeben? </p><input type="checkbox" class="m-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['zitation']" @change="e => store['entscheid-zsfg']['zitation'] = e.target.checked;"/></div>
+                        <div class="flex flex-col items-left">
+                            <p>Fasse den Gerichtsentscheid im </p><select id="jurstyleselect" class="p-2 my-2">
+                                <option value="juristischen Stil" selected>juristischen Stil</option>
+                                <option calue="nicht juristischen Stil">nicht juristischen Stil</option>
+                                <option calue="nicht juristischen Stil in besonders verständlicher und einfacher Sprache">nicht juristischen Stil in besonders verständlicher und einfacher Sprache</option>
+                            </select> <p> in </p><select id="styleselect" class="p-2 my-2">
+                                <option value="Bulletpoints" selected>Bulletpoints</option>
+                                <option calue="Fliesstext">Fliesstext</option>
+                            </select>
+                            <p>zusammen.</p>
+                        </div>
+                        <p class="font-bold text-lg">Formuliere dafür nachfolgende Abschnitte:</p>
+                        <div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['sv']" @change="e => store['entscheid-zsfg']['sv'] = e.target.checked;"/><p class="">Sachverhalt</p></div><div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['quintessenz']" @change="e => store['entscheid-zsfg']['quintessenz'] = e.target.checked;"/><p class="">Quintessenz</p></div><div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['erwaegungen']" @change="e => store['entscheid-zsfg']['erwaegungen'] = e.target.checked;"/><p class="">Erwägungen</p></div><div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['dispositiv']" @change="e => store['entscheid-zsfg']['dispositiv'] = e.target.checked;"/><p class="">Dispositiv</p></div><div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['arg-bf']" @change="e => store['entscheid-zsfg']['arg-bf'] = e.target.checked;"/><p class="">Argumente Beschwerdeführer:in</p></div><div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['arg-bg']" @change="e => store['entscheid-zsfg']['arg-bg'] = e.target.checked;"/><p class="">Argumente Beschwerdegegner:in</p></div>
                         
+                        <p class="font-bold text-lg">Weitere Anforderungen:</p>
+
+                        <div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['restriction']" @change="e => store['entscheid-zsfg']['restriction'] = e.target.checked;"/><p class="">Halte dich nur an die Informationen aus dem Text.</p></div>
+                        <div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['zitation']" @change="e => store['entscheid-zsfg']['zitation'] = e.target.checked;"/><p class="">Liste alle zitierten Entscheide mit Bulletpoints auf.</p></div>
+                        <div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['grundlage']" @change="e => store['entscheid-zsfg']['grundlage'] = e.target.checked;"/><p class="">Liste alle genannten Rechtsgrundlagen mit Bulletpoints auf.</p></div>
+                        <div class="flex items-center"><input type="checkbox" class="mx-2 border rounded border-black h-12" x-bind:checked="store['entscheid-zsfg']['keywords']" @change="e => store['entscheid-zsfg']['keywords'] = e.target.checked;"/><p class="">Liste alle Schlüsselwörter aus dem Entscheid mit Bulletpoints auf.</p></div>
                     </div>
+                </div>
+                <div class="h-full max-h-full w-1/4 bg-white p-2 overflow-y-auto flex flex-col">
+                    <p class="font-bold">Aktueller Prompt</p>
+                    <textarea x-html="generatePrompt()" id="promptDisplay" class="w-full flex-grow"></textarea>
+                    <button class="border rounded border-black p-2 border-indigo-800  bg-indigo-800 text-white" @click="copyPrompt" x-show="mode === 'noapi'" x-text="copy_text"></button>
+                    <button class="border rounded border-black p-2 border-indigo-800 bg-indigo-800 text-white" @click="askPrompt" x-show="mode === 'api'">Direkt anfragen</button>
                 </div>
             </div>
             
-            <button class="border rounded border-black p-2" @click="generatePrompt">Prompt generieren</button>
-            <button class="border rounded border-black p-2" @click="askPrompt">Direkt anfragen</button>
-            <div class="flex-grow overflow-y-auto">
-                <p x-html="llmanswer.replaceAll('\n', '<br/>')" class="w-full flex-grow"></p>
-            </div>
+            
+            <dialog id="dec_modal" class="modal">
+                <div class="modal-box">
+                    <md-block x-html="llmanswer.replaceAll('\\n', '<br/>')" class="w-full flex-grow"></md-block>
+                  <div class="modal-action">
+                    <button class="btn" @click="copyLLMAnswer" id="copyanswerbtn">Antwort kopieren</button>
+                    <form method="dialog">
+                      <!-- if there is a button in form, it will close the modal -->
+                      
+                      <button class="btn">Schliessen</button>
+                    </form>
+                  </div>
+                </div>
+              </dialog>
         </div>
     
  </body></html>
