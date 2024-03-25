@@ -48,7 +48,7 @@
                     "fields": {
                         "entscheid-zsfg": {
                             "display_name": "Entscheid zusammenfassen",
-                            "prompt_base": "Du bist ein juristischer Experte, der präzise und auf den Punkt Zusammenfassungen liefert.",
+                            "prompt_base": "Du bist eine juristische Expertin, der präzise und auf den Punkt Zusammenfassungen liefert.",
                         },
                         "task-zwei": {
                             "display_name": "Zweiter Task",
@@ -153,9 +153,13 @@
                         }      
                     },
                     async askPrompt() {
-                        console.log(document.getElementById("keyfield").value)
+                        
                         dec_modal.showModal()
                         const prompt = await this.generatePrompt();
+                        console.log({"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${document.getElementById("keyfield").value}`}, "body": JSON.stringify({
+                            "model": this.models[this.model].model_name,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0, "stream": true})})
                         let decoder = new TextDecoder()
                         for await (const chunk of (await fetch("https://api.openai.com/v1/chat/completions", {"method": "POST", "headers": {"Content-Type": "application/json", "Authorization": `Bearer ${document.getElementById("keyfield").value}`}, "body": JSON.stringify({
                             "model": this.models[this.model].model_name,
