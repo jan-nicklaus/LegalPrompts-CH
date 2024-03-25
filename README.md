@@ -14,7 +14,7 @@ Um die Modelle gewinnbringend einsetzen zu können, ist es zentral, eine gut for
 + etc. etc.
 
 
-## Vorraussetzungen
+## Voraussetzungen
 
 installiere die requirements um das Projekt zu starten
 $ pip install -r requirements.txt
